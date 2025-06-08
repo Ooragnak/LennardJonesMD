@@ -1,4 +1,4 @@
-# LJ-MD: A Minimal Molecular Dynamics Simulation in Python
+# LennardJonesMD: A Minimal Molecular Dynamics Simulation in Python
 
 This project implements a velocity-Verlet and Langevin dynamics integrator for simulating Lennard-Jones particles in 3D. It supports both NVE and NVT ensembles and includes periodic boundary conditions, trajectory output, and energy diagnostics.
 
