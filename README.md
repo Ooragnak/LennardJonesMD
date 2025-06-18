@@ -2,11 +2,11 @@
 
 This project implements a velocity-Verlet and Langevin dynamics integrator for simulating Lennard-Jones particles in 3D. It supports both NVE and NVT ensembles and includes periodic boundary conditions, trajectory output, and energy diagnostics.
 
-## 1. Features
+## Features
 
 - Velocity Verlet (NVE) and BAOAB Langevin (NVT) integration
 - Lennard-Jones pairwise interaction
-- Periodic and reflective boundary conditions
+- Uses periodic boundary conditions (PBC)in all directions (always on)
 - Temperature control via Langevin thermostat
 - Trajectory output in `.xyz` format
 - Energy diagnostics and plotting
@@ -19,28 +19,6 @@ This project implements a velocity-Verlet and Langevin dynamics integrator for s
 - Matplotlib
 - SciPy
 
-## Getting started
-
-python run_simulation.py
----
-
-Here is the revised **Markdown user manual**, incorporating your additional points:
-
----
-
-# Molecular Dynamics Simulation Manual: `LJ_gas_run_MD.py`
-
-## Overview
-
-This script runs a molecular dynamics (MD) simulation of Lennard-Jones (LJ) particles in either the **NVE** or **NVT** ensemble. It initializes the system, integrates the equations of motion, records energies and trajectories, and visualizes the results.
-
-The simulation:
-
-* Uses **periodic boundary conditions (PBC)** in all directions (always on)
-* Implements a **Langevin thermostat** in NVT simulations
-* Uses **Lennard-Jones interactions** for all pairwise forces
-
----
 
 ## Units
 
@@ -52,35 +30,69 @@ The simulation:
 | Energy      | kJ/mol        |
 | Pressure    | kJ mol⁻¹ nm⁻³ |
 
----
-
-## Requirements
-
-* Python 3
-* NumPy
-* SciPy
-* Matplotlib
-
----
-
 ## How to Use
 
 ### 1. **Configure the Simulation**
 
-Configure the SimulationParameters class in the script to set simulation parameters:
+Edit the parameter section of the script to configure the simulation. 
 
 ```python
-params = SimulationParameters(
-    n_particles=50,
-    ensemble='NVT',             # Choose 'NVE' or 'NVT'
-    temperature=300,            # Kelvin
-    box_length=10.0,            # nm
-    time_step=0.002,            # ps
-    n_steps=10000,
-    output_interval=100,
-)
+#----------------------------------------------------------------
+#   P A R A M E T E R S
+#----------------------------------------------------------------
+# system
+n_particles = 200               # number of particles
+mass_argon =  39.95             # mass in u = 1e-3 kg/mol
+sigma_argon = 0.34              # sigma in nm     Argon: 0.34
+epsilon_argon = 120*R*1e-3      # epsilon in kJ/mol Argon: 120
+
+# simulation
+dt = 0.1             # ps
+n_steps = 1000        # number of timesteps 
+temperature = 300     # K
+box_length = 100      # nm
+tau_thermostat = 1  # thermostat coupling constant in 1/ps
+rij_min = 1e-2      # nm
+NVT = True          # switch to decide between NVT and NVE
+
+# output
+file_name_base = "my_simulation"  # file name for all output files
+```
+(rij_min is a parameter to buffer extremely high forces, when two particles collide.)
+
+The simulation parameters are then automatically set in the SimulationParameters class:
+
+```python
+#
+# initialize simulation parameters
+#
+sim = SimulationParameters(dt = dt, 
+                           n_steps = n_steps,         # number of timesteps
+                           temperature = temperature, # K
+                           box_length = box_length,   # nm  
+                           tau_thermostat = tau_thermostat, # ps
+                           rij_min=rij_min            # nm
+                           )
 ```
 
+The system parameters are initialized using the ParticleSystem class
+
+```python
+#
+# initialize ParticleSystem 
+#
+ps = ParticleSystem(n_particles)
+
+# fill in the parameters for argon
+for i in range(n_particles): 
+    ps.set_parameters(i, mass=mass_argon, sigma=sigma_argon, epsilon=epsilon_argon)
+
+# set initial positions     
+initialize_positions(ps, sim.box_length)
+
+# set initial velocities     
+initialize_velocities(ps, sim.temperature)
+```
 ---
 
 ### 2. **Run the Simulation**
@@ -144,12 +156,10 @@ To inspect particle motion, you can open the trajectory in **VMD (Visual Molecul
 
 ## Notes for Students
 
+* The MD code is designed for atomic gases. This allows you to use much larger **time steps** than in usual MD simulation (e.g. dt = 0.1 ps = 100 fs in the example above). The maximum timestep depends on the ensemble (NVE vs NVT) and system. Monitor the energy and the temperature to make sure that your simulation is stable.
 * You can modify the number of particles, temperature, time step, or box size for experimentation.
 * The **NVE ensemble** should conserve total energy (check energy plot).
 * The **NVT ensemble** uses Langevin dynamics and should regulate the temperature.
 * Periodic boundary conditions mean particles that leave one side of the box re-enter on the opposite side and switched in per default
 * Read the file LJ_gas.py to understand how the code works.
 
-
-
-Let me know if you'd like a companion script to generate VMD-ready XYZ files with element names or a simple Tcl script for coloring particles, showing the box, etc.
