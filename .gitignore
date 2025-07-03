@@ -1,0 +1,12 @@
+*.pdf
+*.png
+*.mp4
+*.xyz
+*.npy
+*.dat
+*.out
+
+plots/
+venv/
+__pycache__/
+Manifest.toml
