@@ -110,7 +110,7 @@ ps = ParticleSystem(n_particles)
 
 # fill in the parameters for argon
 for i in range(n_particles): 
-    ps.set_parameters(i, mass=mass_argon, sigma=sigma_argon, epsilon=epsilon_argon)
+    ps.set_parameters(i, type="Ar", mass=mass_argon, sigma=sigma_argon, epsilon=epsilon_argon)
 
 # initialize LJ params
 initialize_LJ(ps)

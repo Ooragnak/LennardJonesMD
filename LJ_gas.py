@@ -30,7 +30,7 @@ class ParticleSystem:
         self.mass = np.zeros(n_particles)
         self.sigma = np.zeros(n_particles)
         self.epsilon = np.zeros(n_particles)
-        self.type = np.zeros(n_particles, dtype="S2")
+        self.type = np.zeros(n_particles, dtype="U2")
         
         # 3D positions, velocities, forces, and random numbers (shape: n_particles x 3)
         self.position = np.zeros((n_particles, 3))
@@ -46,12 +46,14 @@ class ParticleSystem:
     # With these functions the parameters and states of individual atoms can be changed.
     # In vectorized programming, they will not be used very often
     #
-    def set_parameters(self, i, mass, sigma, epsilon):
+    def set_parameters(self, i, type, mass, sigma, epsilon):
         """Set the paramters of the i-th particle
+            type as two unicode character atomic symbol
             mass in units of u 
             sigma in units of nm 
             epsilon in units of kJ/mol 
         """
+        self.type[i] = type
         self.mass[i] = mass
         self.sigma[i] = sigma
         self.epsilon[i] = epsilon
