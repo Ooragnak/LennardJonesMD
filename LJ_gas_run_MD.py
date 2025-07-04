@@ -32,6 +32,7 @@ from LJ_gas import(
     simulate_NVT_step,
     initialize_positions,
     initialize_velocities,
+    initialize_LJ,
     calculate_force,
     density,
     write_xyz_trajectory,
@@ -110,6 +111,9 @@ ps = ParticleSystem(n_particles)
 # fill in the parameters for argon
 for i in range(n_particles): 
     ps.set_parameters(i, mass=mass_argon, sigma=sigma_argon, epsilon=epsilon_argon)
+
+# initialize LJ params
+initialize_LJ(ps)
 
 # set initial positions     
 initialize_positions(ps, sim.box_length)

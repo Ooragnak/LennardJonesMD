@@ -30,12 +30,17 @@ class ParticleSystem:
         self.mass = np.zeros(n_particles)
         self.sigma = np.zeros(n_particles)
         self.epsilon = np.zeros(n_particles)
+        self.type = np.zeros(n_particles, dtype="S2")
         
         # 3D positions, velocities, forces, and random numbers (shape: n_particles x 3)
         self.position = np.zeros((n_particles, 3))
         self.velocity = np.zeros((n_particles, 3))
         self.force = np.zeros((n_particles, 3))
         self.random_number = np.zeros((n_particles, 3))
+
+        # Constant pairwise Lennard-Jones properties
+        self.combined_sigma = np.zeros((n_particles, n_particles))
+        self.combined_epsilon = np.zeros((n_particles, n_particles))
     
     #---------------------
     # With these functions the parameters and states of individual atoms can be changed.
@@ -138,6 +143,12 @@ def initialize_velocities(ps: ParticleSystem, temperature: float):
     v_cm = np.average(ps.velocity, axis=0, weights=ps.mass)
     ps.velocity -= v_cm
     
+def initialize_LJ(ps: ParticleSystem):
+    """Initialize combined Lennard-Jones parameters using Lorentz-Berthelot combining rules."""
+    sigma_A, sigma_B = np.meshgrid(ps.sigma, ps.sigma)
+    ps.combined_sigma = 0.5 * (sigma_A + sigma_B)
+    epsilon_A, epsilon_B = np.meshgrid(ps.epsilon, ps.epsilon)
+    ps.combined_epsilon = np.sqrt(epsilon_A * epsilon_B)
 
 #--------------------------------------
 # Energies
@@ -155,8 +166,6 @@ def potential_energy(ps: ParticleSystem, sim: SimulationParameters) -> float:
         Positions must be in the same units as sigma (nm).
     """
     n_particles = ps.n
-    sigma = ps.sigma[0]
-    epsilon = ps.epsilon[0]
     L = sim.box_length
         
     # vectorized code to calculate the pairwise distances
@@ -176,6 +185,10 @@ def potential_energy(ps: ParticleSystem, sim: SimulationParameters) -> float:
     
     # Get list of unique distance vectors and unique distances
     r = r_matrix[i_upper]                           # shape (N_pairs,)
+
+    # Extract the relevant size from the predefined combined LJ properties 
+    sigma = ps.combined_sigma[i_upper]              # shape (N_pairs,)
+    epsilon = ps.combined_epsilon[i_upper]          # shape (N_pairs,)
 
     # reset the very small distance to 0.00001 nm to make sure
     # that the sr6**2 term is numerically stable
@@ -283,8 +296,6 @@ def calculate_force(ps: ParticleSystem, sim: SimulationParameters):
     """
     
     n_particles = ps.n
-    sigma = ps.sigma[0]
-    epsilon = ps.epsilon[0]
     L = sim.box_length
 
 
@@ -307,6 +318,10 @@ def calculate_force(ps: ParticleSystem, sim: SimulationParameters):
     rij = rij_matrix[i_upper]                       # shape (N_pairs, 3)    
     r = r_matrix[i_upper]                           # shape (N_pairs,)
     
+    # Extract the relevant size from the predefined combined LJ properties 
+    sigma = ps.combined_sigma[i_upper]              # shape (N_pairs,)
+    epsilon = ps.combined_epsilon[i_upper]          # shape (N_pairs,)
+
     # reset distances < rij_min  to rij_min to make sure
     # that the sr6**2 term is numerically stable
     r = np.clip(r, sim.rij_min, None)
