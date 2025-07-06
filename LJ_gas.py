@@ -18,6 +18,7 @@ Created: May 28, 2025
 #----------------------------------------------------------------
 import numpy as np
 from scipy.constants import R, Avogadro
+from datetime import datetime
 
 #----------------------------------------------------------------
 #   C L A S S E S
@@ -551,3 +552,54 @@ def write_xyz_trajectory(filename, trajectory, atom_symbols):
             for i, pos in enumerate(frame):
                 f.write(f"{atom_symbols[i]} {pos[0]:.8f} {pos[1]:.8f} {pos[2]:.8f}\n")
  
+def write_output_file(filename, ps: ParticleSystem, sim: SimulationParameters, elapsed_time = 0.0):
+    """
+    Writes the simulation properties to an .out file.
+
+    Parameters:
+        ps (ParticleSystem): Contains velocities, masses, and random number storage.
+        sim (SimulationParameters): Contains xi, temperature, dt, and constants.
+    optional:
+        elapsed_time: Float containing the time elapsed during the calculation.
+
+    Returns:
+        None. Writes file to disk.    
+    """
+    output_lines = []
+    output_lines.append("")
+    output_lines.append("----------------------------------------------------------")
+    output_lines.append("Simulation parameters ")    
+    output_lines.append("----------------------------------------------------------")
+    output_lines.append(f"{'Number of particles:':<30}{ps.n:>10.0f} ")
+    output_lines.append(f"{'Box length:':<30}{sim.box_length:>10.3e} nm")
+    output_lines.append(f"{'Box volume:':<30}{sim.box_length**3:>10.3e} nm^3")
+    output_lines.append(f"{'Density:':<30}{density(ps, sim):>10.3e} g/cm^3")
+    output_lines.append("")   
+    output_lines.append(f"{'Time step:':<30}{sim.dt:>10.3f} ps")
+    output_lines.append(f"{'Number of time steps:':<30}{sim.n_steps:>10.0f}")
+    output_lines.append(f"{'Simulation time:':<30}{sim.n_steps * sim.dt :>10.3e} ps")
+    output_lines.append("")   
+    if sim.isNVT==True: 
+        output_lines.append(f"{'Ensemble:':<30}{'NVT':>10}")
+        output_lines.append(f"{'Thermostat temperature:':<30}{sim.temperature:>10.0f} K")
+        output_lines.append(f"{'Thermostat coupling:':<30}{sim.tau_thermostat:>10.3e} ps")
+    else: 
+        output_lines.append(f"{'Ensemble:':<30}{'NVE':>10}")
+        output_lines.append(f"{'Initial velocities:':<30}{sim.temperature:>10.0f} K")
+    output_lines.append("")     
+    output_lines.append(f"{'Lower cutoff radius:':<30}{sim.rij_min:>10.3f} nm")
+    output_lines.append("----------------------------------------------------------")
+    if elapsed_time: 
+        time_per_time_step = elapsed_time/sim.n_steps
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        output_lines.append(f"{'Elapsed time:':<30}{elapsed_time:>10.3f} s")   
+        output_lines.append(f"{'Elapsed time per time step:':<30}{time_per_time_step:>10.3f} s")
+        output_lines.append(f"{'Time stamp:':<30}{now} s")
+    output_lines.append("----------------------------------------------------------")
+    output_lines.append("END")  
+    output_lines.append("----------------------------------------------------------")
+
+    # Write to file
+    with open(filename, "w") as f:
+        for line in output_lines:
+            f.write(line + "\n")
