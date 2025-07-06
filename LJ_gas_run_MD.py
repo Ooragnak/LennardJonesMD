@@ -39,7 +39,8 @@ from LJ_gas import(
     potential_energy,
     kinetic_energy,
     instantaneous_temperature,
-    ideal_gas_pressure
+    ideal_gas_pressure,
+    write_output_file
     )
 
 #----------------------------------------------------------------
@@ -84,7 +85,8 @@ rij_min = 1e-2      # nm
 NVT = True          # switch to decide between NVT and NVE
 
 # output
-file_name_base = "my_simulation"  # file name for all output files
+# Make sure the appropriate subfolder exists in the working directory
+file_name_base = "simulations/my_simulation"  # file name for all output files
 
 #----------------------------------------------------------------
 #   P R O G R A M
@@ -101,7 +103,7 @@ sim = SimulationParameters(dt = dt,
                            box_length = box_length, 
                            tau_thermostat = tau_thermostat,
                            rij_min=rij_min,
-                           isNVT = NVT
+                           is_NVT = NVT
                            )
 
 #
@@ -148,7 +150,7 @@ energy_trajectory[0,3] = ideal_gas_pressure(ps, sim)      # ideal gas pressure
 #  The acutal MD simulation
 #--------------------------------------------------
 for i in range(sim.n_steps):
-    if sim.isNVT==True:
+    if sim.is_NVT==True:
         simulate_NVT_step(ps, sim)
     else: 
         simulate_NVE_step(ps, sim)
@@ -166,8 +168,15 @@ for i in range(sim.n_steps):
 #--------------------------------------
 # W R I T E    T R A J E C T O R I E S 
 #--------------------------------------
+elapsed_time = toc()   # stop the timer
+
 # write position trajectory to file
 write_xyz_trajectory(file_name_base + "_pos.xyz", position_trajectory, atom_symbols=ps.type)
+
+# write output file 
+output = write_output_file(file_name_base + ".out", ps, sim, elapsed_time)
+print(output)
+
 # write energy trajectory to file (binary and text)
 np.save(file_name_base + "_ene.npy", energy_trajectory)
 np.savetxt(file_name_base + "_ene.dat", energy_trajectory, fmt="%.6e", header="#E_pot  E_kin  T  P", comments='')
@@ -238,53 +247,3 @@ plt.ylabel("P [Pa]", fontsize=14)
 
 plt.savefig(file_name_base + "_P.png", dpi=300, bbox_inches='tight')
 plt.show()
-
-
-#--------------------------------------
-# O U T P U T 
-#--------------------------------------
-elapsed_time = toc()   # stop the timer
-output_lines = []
-
-output_lines.append("")
-output_lines.append("----------------------------------------------------------")
-output_lines.append("Simulation parameters ")    
-output_lines.append("----------------------------------------------------------")
-output_lines.append(f"{'Number of particles:':<30}{ps.n:>10.0f} ")
-output_lines.append(f"{'Box length:':<30}{sim.box_length:>10.3e} nm")
-output_lines.append(f"{'Box volume:':<30}{sim.box_length**3:>10.3e} nm^3")
-output_lines.append(f"{'Density:':<30}{rho:>10.3e} g/cm^3")
-output_lines.append("")   
-output_lines.append(f"{'Time step:':<30}{sim.dt:>10.3f} ps")
-output_lines.append(f"{'Number of time steps:':<30}{sim.n_steps:>10.0f}")
-output_lines.append(f"{'Simulation time:':<30}{sim.n_steps * sim.dt :>10.3e} ps")
-output_lines.append("")   
-if sim.isNVT==True: 
-    output_lines.append(f"{'Ensemble:':<30}{'NVT':>10}")
-    output_lines.append(f"{'Thermostat temperature:':<30}{sim.temperature:>10.0f} K")
-    output_lines.append(f"{'Thermostat coupling:':<30}{sim.tau_thermostat:>10.3e} ps")
-else: 
-    output_lines.append(f"{'Ensemble:':<30}{'NVE':>10}")
-    output_lines.append(f"{'Initial velocities:':<30}{sim.temperature:>10.0f} K")
-
-output_lines.append("")     
-output_lines.append(f"{'Lower cutoff radius:':<30}{sim.rij_min:>10.3f} nm")
-output_lines.append("----------------------------------------------------------")
-if elapsed_time: 
-    time_per_time_step = elapsed_time/sim.n_steps
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    output_lines.append(f"{'Elapsed time:':<30}{elapsed_time:>10.3f} s")   
-    output_lines.append(f"{'Elapsed time per time step:':<30}{time_per_time_step:>10.3f} s")
-    output_lines.append(f"{'Time stamp:':<30}{now} s")
-output_lines.append("----------------------------------------------------------")
-output_lines.append("END")  
-output_lines.append("----------------------------------------------------------")
-
-# Print to screen
-for line in output_lines:
-    print(line)
-  
-# Write to file
-with open(file_name_base + ".out", "w") as f:
-    for line in output_lines:
-        f.write(line + "\n")    
