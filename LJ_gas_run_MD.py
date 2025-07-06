@@ -100,7 +100,8 @@ sim = SimulationParameters(dt = dt,
                            temperature = temperature, 
                            box_length = box_length, 
                            tau_thermostat = tau_thermostat,
-                           rij_min=rij_min
+                           rij_min=rij_min,
+                           isNVT = NVT
                            )
 
 #
@@ -123,9 +124,6 @@ initialize_velocities(ps, sim.temperature)
 
 # calculate force according to initial positions
 calculate_force(ps, sim)
-
-# calculate box density
-rho = density(ps, sim)
 
 # calculate initial values of variable properties
 E_pot_init = potential_energy(ps, sim)
@@ -150,7 +148,7 @@ energy_trajectory[0,3] = ideal_gas_pressure(ps, sim)      # ideal gas pressure
 #  The acutal MD simulation
 #--------------------------------------------------
 for i in range(sim.n_steps):
-    if NVT==True:
+    if sim.isNVT==True:
         simulate_NVT_step(ps, sim)
     else: 
         simulate_NVE_step(ps, sim)
@@ -261,7 +259,7 @@ output_lines.append(f"{'Time step:':<30}{sim.dt:>10.3f} ps")
 output_lines.append(f"{'Number of time steps:':<30}{sim.n_steps:>10.0f}")
 output_lines.append(f"{'Simulation time:':<30}{sim.n_steps * sim.dt :>10.3e} ps")
 output_lines.append("")   
-if NVT==True: 
+if sim.isNVT==True: 
     output_lines.append(f"{'Ensemble:':<30}{'NVT':>10}")
     output_lines.append(f"{'Thermostat temperature:':<30}{sim.temperature:>10.0f} K")
     output_lines.append(f"{'Thermostat coupling:':<30}{sim.tau_thermostat:>10.3e} ps")
