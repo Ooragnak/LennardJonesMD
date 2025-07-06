@@ -80,13 +80,14 @@ class ParticleSystem:
 
 
 class SimulationParameters:
-    def __init__(self, dt, n_steps, temperature, box_length, tau_thermostat = None, rij_min=0.0, ):
+    def __init__(self, dt, n_steps, temperature, box_length, is_NVT, tau_thermostat = None, rij_min=0.0, ):
         """
         Parameters:
             dt (float): Time step in ps.
             n_steps (int): Number of time steps.
             temperature (float): Temperature in K.
             box_length (float): Length of the (cubic) simulation box in nm.
+            isNVT (bool): Specify weather NVT or NVE ensemble is used
 
         Parameters with default values: 
             tau_thermostat (float or None) = None: Thermostat coupling constant in ps
@@ -99,6 +100,7 @@ class SimulationParameters:
         self.box_length = box_length  # in nm
         self.tau_thermostat = tau_thermostat  # thermostat coupling time in ps
         self.rij_min = rij_min        # minimum allowed pairwise distance
+        self.is_NVT = is_NVT
 
         # Optional: friction coefficient for Langevin or stochastic thermostats
         self.xi = None
@@ -579,7 +581,7 @@ def write_output_file(filename, ps: ParticleSystem, sim: SimulationParameters, e
     output_lines.append(f"{'Number of time steps:':<30}{sim.n_steps:>10.0f}")
     output_lines.append(f"{'Simulation time:':<30}{sim.n_steps * sim.dt :>10.3e} ps")
     output_lines.append("")   
-    if sim.isNVT==True: 
+    if sim.is_NVT==True: 
         output_lines.append(f"{'Ensemble:':<30}{'NVT':>10}")
         output_lines.append(f"{'Thermostat temperature:':<30}{sim.temperature:>10.0f} K")
         output_lines.append(f"{'Thermostat coupling:':<30}{sim.tau_thermostat:>10.3e} ps")
