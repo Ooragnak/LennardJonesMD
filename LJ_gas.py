@@ -605,3 +605,5 @@ def write_output_file(filename, ps: ParticleSystem, sim: SimulationParameters, e
     with open(filename, "w") as f:
         for line in output_lines:
             f.write(line + "\n")
+    
+    return "\n".join(output_lines)
