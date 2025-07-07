@@ -87,7 +87,7 @@ class SimulationParameters:
             n_steps (int): Number of time steps.
             temperature (float): Temperature in K.
             box_length (float): Length of the (cubic) simulation box in nm.
-            isNVT (bool): Specify weather NVT or NVE ensemble is used
+            isNVT (bool): Specify whether NVT or NVE ensemble is used
 
         Parameters with default values: 
             tau_thermostat (float or None) = None: Thermostat coupling constant in ps
@@ -517,7 +517,7 @@ def simulate_NVT_step(ps: ParticleSystem, sim: SimulationParameters):
 def apply_periodic_boundary(ps: ParticleSystem, sim: SimulationParameters): 
     """
     Applies periodic boundary conditions to all particle positions.
-    Wraps positions into the interval (-L/2, L/2] using centered PBC.
+    Wraps positions into the interval [0, L) using centered PBC.
     """
     L = sim.box_length
     # modulus
