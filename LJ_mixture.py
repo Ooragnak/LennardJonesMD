@@ -26,6 +26,8 @@ import matplotlib.pyplot as plt
 import time
 from datetime import datetime
 
+import tqdm
+
 from LJ_gas import(
     ParticleSystem,
     SimulationParameters,
@@ -84,13 +86,13 @@ epsilon_neon = 1.0   # epsilon in kJ/mol
 
 
 # simulation
-dt = 0.1            # ps
-n_steps = 25000 
+dt = 0.2           # ps
+n_steps = 1000 
 temperature = 300     # K
 box_length = 100      # nm
 tau_thermostat = 1  # thermostat coupling constant in 1/ps
 rij_min = 1e-2      # nm
-NVT = True          # switch to decide between NVT and NVE
+NVT = False          # switch to decide between NVT and NVE
 
 # output
 file_name_base = "simulations/NeArTest"  # file name for all output files
@@ -172,7 +174,7 @@ energy_trajectory[0,3] = ideal_gas_pressure(ps, sim)      # ideal gas pressure
 #--------------------------------------------------
 #  The acutal MD simulation
 #--------------------------------------------------
-for i in range(sim.n_steps):
+for i in tqdm.tqdm(range(sim.n_steps)): 
     if NVT==True:
         simulate_NVT_step(ps, sim)
     else: 
