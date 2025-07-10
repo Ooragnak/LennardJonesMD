@@ -8,5 +8,6 @@
 
 plots/
 venv/
+.vscode/
 __pycache__/
 Manifest.toml
