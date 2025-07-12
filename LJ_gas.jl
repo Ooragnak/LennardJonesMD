@@ -69,7 +69,7 @@ end
 @kernel function calculatePotentialEnergiesKernel!(energies, @Const(px), @Const(py), @Const(pz), @Const(combined_sigma), @Const(combined_epsilon), @Const(box_length), @Const(n_particles), @Const(rij_min), @Const(rij_cutoff))
     i = @index(Global, Linear)
 
-    @private E = zero(eltype(energies))
+    E = zero(eltype(energies))
     r = zero(MVector{3,eltype(energies)})
     
     for j in 1:n_particles if j != i
