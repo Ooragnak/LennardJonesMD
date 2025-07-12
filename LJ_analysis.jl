@@ -1,5 +1,12 @@
 using GLMakie
 using DelimitedFiles
+using Statistics
+
+# Install from https://github.com/tillhanke/EntMix/tree/main, see https://doi.org/10.1021/acs.jpclett.4c02819
+# Steps to install:
+# - Clone to subdirectory ./EntMix
+# - In Julia Pkg Manager mode (]) install using: dev "./EntMix"
+using EntMix
 
 mutable struct simulationResults
     n_particles::Int
@@ -54,3 +61,14 @@ function  importSimulationResults(filenameBase)
 
     return simulationResults(a,b,c,d,e,f,g,h,types,traj)
 end
+
+data = importSimulationResults("simulations/NeArTest")
+
+average_x_Ar = [mean(traj[1,1:100]) for traj in eachslice(data.trajectory, dims=3)]
+average_y_Ar = [mean(traj[2,1:100]) for traj in eachslice(data.trajectory, dims=3)]
+average_z_Ar = [mean(traj[3,1:100]) for traj in eachslice(data.trajectory, dims=3)]
+
+average_x_Ne = [mean(traj[1,101:200]) for traj in eachslice(data.trajectory, dims=3)]
+average_y_Ne = [mean(traj[2,101:200]) for traj in eachslice(data.trajectory, dims=3)]
+average_z_Ne = [mean(traj[3,101:200]) for traj in eachslice(data.trajectory, dims=3)]
+
