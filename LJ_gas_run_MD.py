@@ -142,7 +142,7 @@ position_trajectory[0,:,:] = ps.position # initial position
 energy_trajectory = np.zeros((sim.n_steps+1, 4))
 energy_trajectory[0,0] = potential_energy( ps, sim)       # potential energy
 energy_trajectory[0,1] = kinetic_energy(ps)               # kinetic energy
-energy_trajectory[0,2] = instantaneous_temperature(ps)    # instantaneous pressure
+energy_trajectory[0,2] = instantaneous_temperature(ps)    # instantaneous temperature
 energy_trajectory[0,3] = ideal_gas_pressure(ps, sim)      # ideal gas pressure
 
 
@@ -161,7 +161,7 @@ for i in range(sim.n_steps):
     # store updated energies, temperature and pressure
     energy_trajectory[i+1,0] = potential_energy( ps, sim)     # potential energy
     energy_trajectory[i+1,1] = kinetic_energy(ps)             # kinetic energy
-    energy_trajectory[i+1,2] = instantaneous_temperature(ps)  # instantaneous pressure
+    energy_trajectory[i+1,2] = instantaneous_temperature(ps)  # instantaneous temperature
     energy_trajectory[i+1,3] = ideal_gas_pressure(ps, sim)    # ideal gas pressure
 
 
