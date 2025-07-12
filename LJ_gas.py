@@ -470,10 +470,10 @@ def simulate_NVE_step(ps: ParticleSystem, sim: SimulationParameters):
     """
     B_step(ps, sim, half_step=True)   # update velocity by a half-step
     A_step(ps, sim, half_step=False)  # update position by a full time step
+    apply_periodic_boundary(ps, sim)
+
     calculate_force(ps, sim)          # udpate force  
     B_step(ps, sim, half_step=True)   # update velocity by a second half-step
-
-    apply_periodic_boundary(ps, sim)
         
     return None      
 
@@ -504,13 +504,15 @@ def simulate_NVT_step(ps: ParticleSystem, sim: SimulationParameters):
     
     B_step(ps, sim, half_step=True)   # update velocity by a half-step
     A_step(ps, sim, half_step=True)  # update position by a half-step
+    apply_periodic_boundary(ps, sim)
+    
     # thermostat
     O_step(ps, sim, half_step=False)  # Full-step velocity update using the Langevin thermostat (friction + noise)
     A_step(ps, sim, half_step=True)  # update position by a half-step
+    apply_periodic_boundary(ps, sim)
+
     calculate_force(ps, sim)          # udpate force  
     B_step(ps, sim, half_step=True)   # update velocity by a second half-step
-
-    apply_periodic_boundary(ps, sim)
         
     return None 
 
