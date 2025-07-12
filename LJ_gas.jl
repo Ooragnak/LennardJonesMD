@@ -1,5 +1,3 @@
-using AMDGPU: exception_holder
-using Base: with_logger
 #----------------------------------------------------------------
 #   I M P O R T S
 #----------------------------------------------------------------
@@ -210,7 +208,7 @@ function potential_energy(ps::ParticleSystem, sim::SimulationParameters; per_par
     kernel!(energies, px, py, pz, ps.combined_sigma, ps.combined_epsilon, sim.box_length, ps.n, sim.rij_min, sim.rij_cutoff, ndrange = ps.n)
 
     if per_particle
-        return energies
+        return energies .* 0.5
     else
         return sum(energies) * 0.5
     end
