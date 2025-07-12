@@ -194,8 +194,8 @@ elapsed_time = toc()   # stop the timer
 #--------------------------------------
 # W R I T E    T R A J E C T O R I E S 
 #--------------------------------------
-write_xyz_trajectory(file_name_base + "_pos.xyz", position_trajectory, atom_symbols=ps.type, elapsed_time=elapsed_time)
-write_output_file(file_name_base + ".out", ps, sim)
+write_xyz_trajectory(file_name_base + "_pos.xyz", position_trajectory, atom_symbols=ps.type)
+write_output_file(file_name_base + ".out", ps, sim, elapsed_time = elapsed_time)
 np.savetxt(file_name_base + "_ene.dat", energy_trajectory, fmt="%.6e", header="#E_pot  E_kin  T  P", comments='')
 
 
