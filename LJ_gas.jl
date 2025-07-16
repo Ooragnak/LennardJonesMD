@@ -60,6 +60,7 @@ struct SimulationParameters
     rij_min
     rij_cutoff
     is_NVT::Bool
+    steps_per_savestep
 end
 
 #----------------------------------------------------------------
@@ -417,7 +418,8 @@ function write_output_file(filename_base, ps::ParticleSystem, sim::SimulationPar
             push!(output_lines, @sprintf("%-30s%10.3f ms", "Elapsed time per time step:", time_per_time_step*1000 ))
         end
         push!(output_lines, "----------------------------------------------------------")
-    end
+    end 
+    push!(output_lines, @sprintf("%-30s%10.0f", "Time steps per trajectory save:", sim.steps_per_savestep))
     push!(output_lines, @sprintf("%-30s%10s", "Used backend:", string(get_backend(ps.force))))
     push!(output_lines, @sprintf("%-30s%10s", "Accuracy:", string(eltype(ps.force))))
     push!(output_lines, "----------------------------------------------------------")

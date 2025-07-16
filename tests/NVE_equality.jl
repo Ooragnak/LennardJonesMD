@@ -30,7 +30,7 @@ filename_base = "simulations/NeArTestEqualityJulia"
 
 ARRAYTPE = Array{Float64} # CPU double precision
 
-sim = SimulationParameters(dt, n_steps, temperature, box_length, tau_thermostat, rij_min, Inf, NVT)
+sim = SimulationParameters(dt, n_steps, temperature, box_length, tau_thermostat, rij_min, Inf, NVT, save_frequency)
 
 # initialize ParticleSystem 
 ps = ParticleSystem(n_particles, ARRAYTPE)

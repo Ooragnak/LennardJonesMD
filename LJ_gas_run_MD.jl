@@ -31,14 +31,14 @@ save_frequency = 50 # save every n-th step
 filename_base = "simulations/JuliaNeArTest"
 
 # Switch between CPU and GPU computation by choosing the array type used for initialization
-const ARRAYTPE = ROCArray{Float32} # GPU
-#const ARRAYTPE = Array{Float32} # CPU single precision
-#const ARRAYTPE = Array{Float64} # CPU double precision
+ARRAYTPE = ROCArray{Float32} # GPU
+#ARRAYTPE = Array{Float32} # CPU single precision
+#ARRAYTPE = Array{Float64} # CPU double precision
 
 #calculate save points
 n_saves = div(n_steps, save_frequency) + 1
 
-sim = SimulationParameters(dt, n_steps, temperature, box_length, tau_thermostat, rij_min, Inf, NVT)
+sim = SimulationParameters(dt, n_steps, temperature, box_length, tau_thermostat, rij_min, Inf, NVT, save_frequency)
 
 # initialize ParticleSystem 
 #
@@ -95,17 +95,34 @@ energy_trajectory[2,1] = kinetic_energy(ps)               # kinetic energy
 energy_trajectory[3,1] = instantaneous_temperature(ps)    # instantaneous temperature
 energy_trajectory[4,1] = ideal_gas_pressure(ps, sim)      # ideal gas pressure
 
-begin
-stats = @timed begin
-    @showprogress for i in 1:n_steps
+# Equilibrate by simulating a few NVT steps
+for k in 1:1000
+    simulate_NVT_step!(ps, sim)
+    if instantaneous_temperature(ps) < sim.temperature * 1.1
+        println("Rough equilibration finished after $k steps.")
+        break
+    end
+end
+
+for k in 1:50
+    simulate_NVT_step!(ps, sim)
+end
+
+println("Equilibration done with current temperature: ", instantaneous_temperature(ps))
+
+
+p = Progress(sim.n_steps, dt = 1, showspeed=true)
+generate_showvalues(iter, current_save_pos) = () -> [(:iter,iter), ("Potential Energy", energy_trajectory[1,current_save_pos+1]), ("Temperature", energy_trajectory[3,current_save_pos+1])]
+
+stats = @timed for i in 1:n_steps
     if NVT
         simulate_NVT_step!(ps, sim)
     else
         simulate_NVE_step!(ps, sim)
     end
 
-    if mod(n_steps,save_frequency) == 0
-        current_save_pos = div(i,save_frequency)
+    current_save_pos = div(i,save_frequency)
+    if mod(i,save_frequency) == 0
         # store updated positions
         position_trajectory[:,:,current_save_pos+1] = ps.position # store updated positions
 
@@ -114,9 +131,12 @@ stats = @timed begin
         energy_trajectory[2,current_save_pos+1] = kinetic_energy(ps)             # kinetic energy
         energy_trajectory[3,current_save_pos+1] = instantaneous_temperature(ps)  # instantaneous temperature
         energy_trajectory[4,current_save_pos+1] = ideal_gas_pressure(ps, sim)    # ideal gas pressure
+
+        T = 1 + sim.temperature * (1 - div(i,save_frequency) / div(n_steps,save_frequency))
+        global sim = SimulationParameters(dt, n_steps, T, box_length, tau_thermostat, rij_min, Inf, NVT, save_frequency)
+
     end
-    end
-end
+    next!(p, showvalues = generate_showvalues(i, current_save_pos))
 end
 
 energies = energy_trajectory[1,:] .+ energy_trajectory[2,:]
