@@ -1,39 +1,39 @@
 include("LJ_gas.jl")
 
-using AMDGPU
+#using AMDGPU
 using ProgressMeter
 
 # system
 n_particles = 1000
-type_A = "Ar"
-mass_A =  39.95             # mass in u = 1e-3 kg/mol
-sigma_A = 0.34              # sigma in nm     Argon: 0.34
-epsilon_A = 120*R*1e-3      # epsilon in kJ/mol Argon: 120
+type_A = "Kr"
+mass_A =  83.798             # mass in u = 1e-3 kg/mol
+sigma_A = 0.3627              # sigma in nm     Argon: 0.34
+epsilon_A = 162.58 * Boltzmann     # epsilon in kJ/mol Argon: 120
 
 # see http://www.sklogwiki.org/SklogWiki/index.php/Neon
-type_B = "Ne"
-mass_B =  20.18             # mass in u = 1e-3 kg/mol
-sigma_B= 0.2782           # sigma in nm     
-epsilon_B = 3.2135 * 10e-3 * elementary_charge * Avogadro   # epsilon in kJ/mol 
-epsilon_B = 1.0   # epsilon in kJ/mol 
+type_B = "Ra"
+mass_B =  222             # mass in u = 1e-3 kg/mol
+sigma_B= 0.417           # sigma in nm     
+epsilon_B = 300 * Boltzmann   # epsilon in kJ/mol 
 
 # simulation
 dt = 0.1          # ps
-n_steps = 10000
-temperature = 40     # K
-box_length = 100      # nm
+n_steps = 4000
+temperature = 230     # K
+end_temperature = 100
+box_length = 20      # nm
 tau_thermostat = 1  # thermostat coupling constant in 1/ps
-rij_min = 1e-1      # nm
+rij_min = 1e-2      # nm
 NVT = true          # switch to decide between NVT and NVE
 
 # Metadata 
-save_frequency = 50 # save every n-th step
-filename_base = "simulations/JuliaNeArTest"
+save_frequency = 2 # save every n-th step
+filename_base = "simulations/JuliaLJFluidTest2"
 
 # Switch between CPU and GPU computation by choosing the array type used for initialization
-ARRAYTPE = ROCArray{Float32} # GPU
+#ARRAYTPE = ROCArray{Float32} # GPU
 #ARRAYTPE = Array{Float32} # CPU single precision
-#ARRAYTPE = Array{Float64} # CPU double precision
+ARRAYTPE = Array{Float64} # CPU double precision
 
 #calculate save points
 n_saves = div(n_steps, save_frequency) + 1
@@ -132,8 +132,11 @@ stats = @timed for i in 1:n_steps
         energy_trajectory[3,current_save_pos+1] = instantaneous_temperature(ps)  # instantaneous temperature
         energy_trajectory[4,current_save_pos+1] = ideal_gas_pressure(ps, sim)    # ideal gas pressure
 
-        T = 1 + sim.temperature * (1 - div(i,save_frequency) / div(n_steps,save_frequency))
-        global sim = SimulationParameters(dt, n_steps, T, box_length, tau_thermostat, rij_min, Inf, NVT, save_frequency)
+        if !iszero(end_temperature)
+            @assert end_temperature < temperature
+            T = end_temperature + (temperature - end_temperature) * (1 - div(i,save_frequency) / div(n_steps,save_frequency))
+            global sim = SimulationParameters(dt, n_steps, T, box_length, tau_thermostat, rij_min, Inf, NVT, save_frequency)
+        end
 
     end
     next!(p, showvalues = generate_showvalues(i, current_save_pos))
