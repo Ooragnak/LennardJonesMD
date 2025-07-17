@@ -17,6 +17,7 @@ using PhysicalConstants: CODATA2022 as constants
 R = constants.R.val
 elementary_charge = constants.ElementaryCharge.val
 Avogadro = constants.AvogadroConstant.val
+Boltzmann = constants.BoltzmannConstant.val
 #########################################
 
 #----------------------------------------------------------------
