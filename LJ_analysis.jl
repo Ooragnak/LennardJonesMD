@@ -65,20 +65,22 @@ function  importSimulationResults(filenameBase)
     return simulationResults(a,b,c,d,e,f,g,h,types,traj)
 end
 
-data = importSimulationResults("simulations/KrRa")
+data = importSimulationResults("simulations/NeArTest")
 
-average_x_A = [mean(traj[1,1:500]) for traj in eachslice(data.trajectory, dims=3)]
-average_y_A = [mean(traj[2,1:500]) for traj in eachslice(data.trajectory, dims=3)]
-average_z_A = [mean(traj[3,1:500]) for traj in eachslice(data.trajectory, dims=3)]
+collections = [findall(x -> x == type, data.particleTypes) for type in unique(data.particleTypes)]
 
-average_x_B = [mean(traj[1,501:1000]) for traj in eachslice(data.trajectory, dims=3)]
-average_y_B = [mean(traj[2,501:1000]) for traj in eachslice(data.trajectory, dims=3)]
-average_z_B = [mean(traj[3,501:1000]) for traj in eachslice(data.trajectory, dims=3)]
+averages = ([],[],[])
+
+for collection in collections
+    for i in 1:3
+        push!(averages[i],[mean(traj[i,collection]) for traj in eachslice(data.trajectory, dims=3)])
+    end
+end
 
 frames = []
 
 #chemfiles uses 0-based indexing 
-atomCollections = [findall(x -> x == type, data.particleTypes) .- 1 for type in unique(data.particleTypes)]
+atomCollections = [collection .- 1 for collection in collections]
 for t in 1:length(data.temperatures)
     frame = Chemfiles.Frame()
     Chemfiles.set_cell!(frame, Chemfiles.UnitCell([data.boxlength, data.boxlength, data.boxlength]))
