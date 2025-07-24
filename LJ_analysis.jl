@@ -1,12 +1,13 @@
 using GLMakie
 using DelimitedFiles
 using Statistics
+import Chemfiles
 
 # Install from https://github.com/tillhanke/EntMix/tree/main, see https://doi.org/10.1021/acs.jpclett.4c02819
 # Steps to install:
 # - Clone to subdirectory ./EntMix
 # - In Julia Pkg Manager mode (]) install using: dev "./EntMix"
-using EntMix
+import EntMix
 
 mutable struct simulationResults
     n_particles::Int
@@ -51,7 +52,9 @@ function  importSimulationResults(filenameBase)
             for atom in split(frame, "\n")
                 if !isempty(atom)
                     line = split(atom)
-                    push!(types, line[1])
+                    if frames == 1
+                        push!(types, line[1])
+                    end
                     append!(positions,parse.(Float64, line[2:end]))
                 end
             end
@@ -62,13 +65,28 @@ function  importSimulationResults(filenameBase)
     return simulationResults(a,b,c,d,e,f,g,h,types,traj)
 end
 
-data = importSimulationResults("simulations/NeArTest")
+data = importSimulationResults("simulations/KrRa")
 
-average_x_Ar = [mean(traj[1,1:100]) for traj in eachslice(data.trajectory, dims=3)]
-average_y_Ar = [mean(traj[2,1:100]) for traj in eachslice(data.trajectory, dims=3)]
-average_z_Ar = [mean(traj[3,1:100]) for traj in eachslice(data.trajectory, dims=3)]
+average_x_A = [mean(traj[1,1:500]) for traj in eachslice(data.trajectory, dims=3)]
+average_y_A = [mean(traj[2,1:500]) for traj in eachslice(data.trajectory, dims=3)]
+average_z_A = [mean(traj[3,1:500]) for traj in eachslice(data.trajectory, dims=3)]
 
-average_x_Ne = [mean(traj[1,101:200]) for traj in eachslice(data.trajectory, dims=3)]
-average_y_Ne = [mean(traj[2,101:200]) for traj in eachslice(data.trajectory, dims=3)]
-average_z_Ne = [mean(traj[3,101:200]) for traj in eachslice(data.trajectory, dims=3)]
+average_x_B = [mean(traj[1,501:1000]) for traj in eachslice(data.trajectory, dims=3)]
+average_y_B = [mean(traj[2,501:1000]) for traj in eachslice(data.trajectory, dims=3)]
+average_z_B = [mean(traj[3,501:1000]) for traj in eachslice(data.trajectory, dims=3)]
 
+frames = []
+
+#chemfiles uses 0-based indexing 
+atomCollections = [findall(x -> x == type, data.particleTypes) .- 1 for type in unique(data.particleTypes)]
+for t in 1:length(data.temperatures)
+    frame = Chemfiles.Frame()
+    Chemfiles.set_cell!(frame, Chemfiles.UnitCell([data.boxlength, data.boxlength, data.boxlength]))
+    for (i, atom) in enumerate(data.particleTypes)
+        Chemfiles.add_atom!(frame, Chemfiles.Atom(String(atom)), data.trajectory[:,i,t])
+    end
+    push!(frames,frame)
+end
+
+selected_frames = frames[1:10:length(frames)]
+entropies = [EntMix.entropy(frame,atomCollections,1.0) for frame in selected_frames]
