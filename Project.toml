@@ -1,6 +1,7 @@
 [deps]
 AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Chemfiles = "46823bd8-5fb3-5f92-9aa0-96921f3dd015"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 EntMix = "e8613159-47f9-434c-8817-aca8562c09cd"
