@@ -21,19 +21,21 @@ epsilon_B = 300 * R * 1e-3   # epsilon in kJ/mol
 
 # simulation
 dt = 0.002          # ps
-n_steps = 2000000
-temperature = 20     # K
-end_temperature = 20
+n_steps = 4000000
+temperature = 150     # K
+end_temperature = 150
 box_length = 16      # nm
 tau_thermostat = 1  # thermostat coupling constant in 1/ps
 rij_min = 1e-3      # nm
 rij_min_starting = 0.5 # nm
 NVT = false          # switch to decide between NVT and NVE
 equilibrate = true # turn on NVT equilibration for all simulations
+reequilibration_frequency = 80 # select how often to do a NVT step even on NVE runs to return the temperature back to its intended value - set to 0 to disable
+
 
 # Metadata 
 save_frequency = 200 # save every n-th step
-filename_base = "simulations/NeRn_phase_separation"
+filename_base = "simulations/NeRn_phase_separation_NVE_constant_temperature"
 
 # Switch between CPU and GPU computation by choosing the array type used for initialization
 ARRAYTPE = ROCArray{Float32} # GPU
@@ -175,6 +177,8 @@ generate_showvalues(iter, current_save_pos) = () -> [(:iter,iter), ("Potential E
 
 stats = @timed for i in 1:n_steps
     if NVT
+        simulate_NVT_step!(ps, sim)
+    elseif !iszero(reequilibration_frequency) && mod(i, reequilibration_frequency) == 0
         simulate_NVT_step!(ps, sim)
     else
         simulate_NVE_step!(ps, sim)
