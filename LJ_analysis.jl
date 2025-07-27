@@ -1,13 +1,6 @@
 using GLMakie
 using DelimitedFiles
 using Statistics
-import Chemfiles
-
-# Install from https://github.com/tillhanke/EntMix/tree/main, see https://doi.org/10.1021/acs.jpclett.4c02819
-# Steps to install:
-# - Clone to subdirectory ./EntMix
-# - In Julia Pkg Manager mode (]) install using: dev "./EntMix"
-import EntMix
 
 mutable struct simulationResults
     n_particles::Int
@@ -65,7 +58,7 @@ function  importSimulationResults(filenameBase)
     return simulationResults(a,b,c,d,e,f,g,h,types,traj)
 end
 
-data = importSimulationResults("simulations/NeArTest")
+data = importSimulationResults("simulations/NeRn")
 
 collections = [findall(x -> x == type, data.particleTypes) for type in unique(data.particleTypes)]
 
@@ -76,19 +69,3 @@ for collection in collections
         push!(averages[i],[mean(traj[i,collection]) for traj in eachslice(data.trajectory, dims=3)])
     end
 end
-
-frames = []
-
-#chemfiles uses 0-based indexing 
-atomCollections = [collection .- 1 for collection in collections]
-for t in 1:length(data.temperatures)
-    frame = Chemfiles.Frame()
-    Chemfiles.set_cell!(frame, Chemfiles.UnitCell([data.boxlength, data.boxlength, data.boxlength]))
-    for (i, atom) in enumerate(data.particleTypes)
-        Chemfiles.add_atom!(frame, Chemfiles.Atom(String(atom)), data.trajectory[:,i,t])
-    end
-    push!(frames,frame)
-end
-
-selected_frames = frames[1:10:length(frames)]
-entropies = [EntMix.entropy(frame,atomCollections,1.0) for frame in selected_frames]
