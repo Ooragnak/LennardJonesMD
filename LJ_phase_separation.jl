@@ -113,9 +113,9 @@ for i in 1:200
         for i in sortperm(dist)[1:cutoff]
             index = CartesianIndices((n_particles, n_particles))[i][1]
             if index > n_A
-                pos_initial[:,index] = get_position(box_A...)
-            else
                 pos_initial[:,index] = get_position(box_B...)
+            else
+                pos_initial[:,index] = get_position(box_A...)
             end
         end
     else

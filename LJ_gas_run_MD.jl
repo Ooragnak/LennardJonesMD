@@ -5,7 +5,7 @@ using ProgressMeter
 using LinearAlgebra
 
 # system
-n_particles = 500
+n_particles = 2000
 
 # LENNARD JONES PARAMS: https://doi.org/10.1080/00268976.2016.1246760
 #type_A = "Kr"
@@ -15,29 +15,39 @@ n_particles = 500
 
 type_A = "Ne"
 mass_A =  20.18             # mass in u = 1e-3 kg/mol
-sigma_A = 0.2782              # sigma in nm     
-epsilon_A = 33 * R * 1e-3     # epsilon in kJ/mol
+sigma_A = 0.2801              # sigma in nm     
+epsilon_A = 33.921 * R * 1e-3     # epsilon in kJ/mol
 
-type_B = "Rn"
-mass_B =  222             # mass in u = 1e-3 kg/mol 
-sigma_B= 0.417           # sigma in nm     
-epsilon_B = 300 * R * 1e-3   # epsilon in kJ/mol 
+type_B = "Ar"
+mass_B =  39.948             # mass in u = 1e-3 kg/mol
+sigma_B = 0.33952              # sigma in nm     
+epsilon_B = 116.79 * R * 1e-3     # epsilon in kJ/mol
+
+#type_B = "Rn"
+#mass_B =  222             # mass in u = 1e-3 kg/mol 
+#sigma_B= 0.417           # sigma in nm     
+#epsilon_B = 300 * R * 1e-3   # epsilon in kJ/mol 
+
+#type_B = "He"
+#mass_B =  4.002602             # mass in u = 1e-3 kg/mol 
+#sigma_B= 0.228           # sigma in nm     
+#epsilon_B = 10.2 * R * 1e-3  # epsilon in kJ/mol 
 
 # simulation
-dt = 0.002          # ps
-n_steps = 8000000
-temperature = 20     # K
-end_temperature = 20
-box_length = 10      # nm
+dt = 0.02          # ps
+n_steps = 50000
+temperature = 300     # K
+end_temperature = 0
+box_length = 30      # nm
 tau_thermostat = 1  # thermostat coupling constant in 1/ps
-rij_min = 1e-3      # nm
-rij_min_starting = 0.5 # nm
-NVT = false          # switch to decide between NVT and NVE
-equilibrate = true # turn on NVT equilibration for all simulations
+rij_min = 1e-2      # nm
+rij_min_starting = 0.3 # nm
+NVT = true          # switch to decide between NVT and NVE
+equilibrate = false # turn on NVT equilibration for all simulations
 
 # Metadata 
-save_frequency = 250 # save every n-th step
-filename_base = "simulations/NeRn"
+save_frequency = 10 # save every n-th step
+filename_base = "simulations/NeAr_Large_NVT_300"
 
 # Switch between CPU and GPU computation by choosing the array type used for initialization
 ARRAYTPE = ROCArray{Float32} # GPU
@@ -115,9 +125,9 @@ for i in 1:100
         for i in sortperm(dist)[1:cutoff]
             index = CartesianIndices((n_particles, n_particles))[i][1]
             if index > n_A
-                pos_initial[:,index] = get_position(box_A...)
-            else
                 pos_initial[:,index] = get_position(box_B...)
+            else
+                pos_initial[:,index] = get_position(box_A...)
             end
         end
     else
