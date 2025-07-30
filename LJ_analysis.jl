@@ -1,6 +1,8 @@
 using GLMakie
 using DelimitedFiles
 using Statistics
+using ColorSchemes
+using LaTeXStrings
 
 ############### CONSTANTS ###############
 using PhysicalConstants: CODATA2022 as constants
@@ -10,6 +12,10 @@ elementary_charge = constants.ElementaryCharge.val
 Avogadro = constants.AvogadroConstant.val
 Boltzmann = constants.BoltzmannConstant.val
 #########################################
+
+#----------------------------------------------------------------
+#   I M P O R T I N G 
+#----------------------------------------------------------------
 
 mutable struct simulationResults
     n_particles::Int
@@ -23,8 +29,6 @@ mutable struct simulationResults
     particleTypes::AbstractVector
     trajectory::AbstractArray
 end
-
-
 
 function  importSimulationResults(filenameBase)
     a, b, c, d = open(filenameBase * ".out") do f
@@ -94,7 +98,7 @@ function approximate_entropy(position, box_length, indices_A, indices_B; split=(
         if !iszero(n_A) && !iszero(n_B)
             x_A = n_A / n_total
             x_B = n_B / n_total
-            entropy += -n * R * (x_A*log(x_A) + x_B*log(x_B))
+            entropy += -n * Boltzmann * (x_A*log(x_A) + x_B*log(x_B))
         end
     end
     return entropy
@@ -119,26 +123,159 @@ function distances(positions, box_length)
     return dist
 end
 
-data = importSimulationResults("simulations/NeRn_phase_separation_NVE_constant_temperature")
-
-collections = [findall(x -> x == type, data.particleTypes) for type in unique(data.particleTypes)]
-
-A = collections[1]
-B = collections[2]
-
-averages = ([],[],[])
-
-for collection in collections
-    for i in 1:3
-        push!(averages[i],[mean(traj[i,collection]) for traj in eachslice(data.trajectory, dims=3)])
-    end
+function get_collections(data)
+    collections = (findall(x -> x == type, data.particleTypes) for type in unique(data.particleTypes))
+    return collections
 end
 
-r_A = 1.54
-r_B = 2.20
-timestep = 20000
+#----------------------------------------------------------------
+#   P L O T T I N G
+#----------------------------------------------------------------
 
-f, ax3d, p1 = meshscatter(data.trajectory[:,A,timestep], markersize = r_A)
-meshscatter!(ax3d, data.trajectory[:,B,timestep], markersize = r_A)
+simpleColors() = Theme(
+    palette = Attributes(color = ColorSchemes.tol_bright, linestyle = [:solid, :dash, :dot]),
+    colormap = :lipari,
+    Band = Attributes(
+        alpha = 0.1,
+        cycle = [:color],
+    ),
+    Lines = Attributes(
+        cycle = [:color, :linestyle],
+    ),
+)
 
-entropies = [approximate_entropy(pos, 160, A, B, split = (10,10,10)) for pos in eachslice(data.trajectory, dims = 3)]
+highDPI() = Theme(
+    fontsize = 36,
+    size=(2000,1500),
+    figure_padding = 48,
+    Axis = Attributes(
+        xautolimitmargin = (0, 0),
+        xminorticksvisible = true,
+        xminorgridvisible = true,
+        yminorgridvisible = true,
+        yminorticksvisible = true,
+        xminorticks = IntervalsBetween(4),
+        yminorticks = IntervalsBetween(4),
+    ),
+    Colorbar = Attributes(
+        minorticksvisible = true,
+        minorticks = IntervalsBetween(4),
+    ),
+)
+
+set_theme!(merge(simpleColors(),highDPI(), theme_latexfonts()))
+
+function compare_mixing(NVE_simulations, NVT_simulations, NVE_labels, NVT_labels, timesteps; entropy_split = (4,4,4))
+    f = Figure(size = (2000, 1200))
+    ax = Axis(f[1:2,1], xlabel = L"t \text{ [ns]}", ylabel = L"\Delta S_\text{mix} \text{ (approx.)}")
+
+    NVEs = []
+    NVTs = []
+
+    colors = ColorSchemes.tol_bright
+
+    for (i,sim) in enumerate(NVE_simulations)
+        tvals = sim.dt .* 1e-3 .* collect(0:timesteps-1)
+        entropies = [approximate_entropy(pos, sim.boxlength * 10, get_collections(sim)..., split = entropy_split) for pos in eachslice(sim.trajectory, dims = 3)[1:timesteps]] ./ sim.n_particles .* Avogadro
+        p = lines!(ax, tvals, entropies, color = colors[i])
+        push!(NVEs, p)
+    end
+
+    for (i,sim) in enumerate(NVT_simulations)
+        tvals = sim.dt .* 1e-3 .* collect(0:timesteps-1)
+        entropies = [approximate_entropy(pos, sim.boxlength * 10, get_collections(sim) ..., split = entropy_split) for pos in eachslice(sim.trajectory, dims = 3)[1:timesteps]] ./ sim.n_particles .* Avogadro
+        p = lines!(ax, tvals, entropies, color = colors[i], linestyle = :dash)
+        push!(NVTs, p)
+    end
+
+    Legend(f[1,2], NVEs, NVE_labels, "NVE")
+    Legend(f[2,2], NVTs, NVT_labels, "NVT")
+    return f
+end
+
+function plot_mixing(data, types, radii; entropy_split = (4,4,4))
+    f = Figure(size = (2000, 1200))
+    ax3d1 = Axis3(f[1:6,3], xlabel = "x", ylabel = "y", zlabel = "z", title = "Initial", azimuth = 0.4π)
+    ax3d2 = Axis3(f[7:12,3], xlabel = "x", ylabel = "y", zlabel = "z", title = "Final"  , azimuth = 0.4π)
+    ax1 = Axis(f[1:4,1:2], ylabel = types[1] * "\n Position [nm]")
+    ax2 = Axis(f[5:8,1:2], ylabel = types[2] * "\n Position [nm]")
+    ax3 = Axis(f[9:12,1:2], xlabel = L"t \text{ [ns]}", ylabel = L"\Delta S_\text{mix} \text{ (approx.)}")
+    hidedecorations!(ax3d1)
+    hidedecorations!(ax3d2)
+
+    hidexdecorations!(ax1, grid = false, minorgrid = false)
+    hidexdecorations!(ax2, grid = false, minorgrid = false)
+
+    A, B = get_collections(data)
+    meshscatter!(ax3d1, data.trajectory[:,A,1], markersize = radii[1], label = types[1], color = ColorSchemes.tol_bright[1])
+    meshscatter!(ax3d1, data.trajectory[:,B,1], markersize = radii[2], label = types[2], color = ColorSchemes.tol_bright[2])
+
+    meshscatter!(ax3d2, data.trajectory[:,A,end], markersize = radii[1], label = types[1], color = ColorSchemes.tol_bright[1])
+    meshscatter!(ax3d2, data.trajectory[:,B,end], markersize = radii[2], label = types[2], color = ColorSchemes.tol_bright[2])
+
+    labels = [L"\bar{x}", L"\bar{y}", L"\bar{z}"]
+    tvals = data.dt .* 1e-3 .* collect(0:length(data.temperatures)-1)
+
+    for i in 1:3
+        averageA = [mean(traj[i,A]) for traj in eachslice(data.trajectory, dims=3)]
+        averageB = [mean(traj[i,B]) for traj in eachslice(data.trajectory, dims=3)]
+        lines!(ax1, tvals, averageA, label = labels[i])
+        lines!(ax2, tvals, averageB, label = labels[i])
+    end
+
+    entropies = [approximate_entropy(pos, data.boxlength * 10, A, B, split = entropy_split) for pos in eachslice(data.trajectory, dims = 3)] ./ data.n_particles * Avogadro
+
+    lines!(ax3, tvals, entropies, color = :black)
+
+    axislegend(ax3d1)
+    axislegend(ax3d2)
+    axislegend(ax1)
+    axislegend(ax2)
+    return f
+end
+
+function plot_phase_Separation(data, types, radii; entropy_split = (2,2,2))
+    f = Figure(size = (2000, 1200))
+    ax3d1 = Axis3(f[1:6,3], xlabel = "x", ylabel = "y", zlabel = "z", title = "Initial", azimuth = 0.4π)
+    ax3d2 = Axis3(f[7:12,3], xlabel = "x", ylabel = "y", zlabel = "z", title = "Final"  , azimuth = 0.4π)
+    ax1 = Axis(f[1:4,1:2], ylabel = L"E \text{ [kJ mol}^{-1}\text{]}")
+    ax2 = Axis(f[5:8,1:2], ylabel = L"T \text{ [K]}")
+    ax3 = Axis(f[9:12,1:2], xlabel = L"t \text{ [ns]}", ylabel = L"\Delta S_\text{mix} \text{ (approx.)}")
+    hidedecorations!(ax3d1)
+    hidedecorations!(ax3d2)
+
+    hidexdecorations!(ax1, grid = false, minorgrid = false)
+    hidexdecorations!(ax2, grid = false, minorgrid = false)
+
+    A, B = get_collections(data)
+    meshscatter!(ax3d1, data.trajectory[:,A,1], markersize = radii[1], label = types[1], color = ColorSchemes.tol_bright[1])
+    meshscatter!(ax3d1, data.trajectory[:,B,1], markersize = radii[2], label = types[2], color = ColorSchemes.tol_bright[2])
+
+    meshscatter!(ax3d2, data.trajectory[:,A,end], markersize = radii[1], label = types[1], color = ColorSchemes.tol_bright[1])
+    meshscatter!(ax3d2, data.trajectory[:,B,end], markersize = radii[2], label = types[2], color = ColorSchemes.tol_bright[2])
+
+    tvals = data.dt .* 1e-3 .* collect(0:length(data.temperatures)-1)
+    E_kin = data.kinetic_energies
+    E_pot = data.potential_energies
+    E_tot = E_kin + E_pot
+
+    lines!(ax1, tvals, E_kin, label = L"E_\text{kin}")
+    lines!(ax1, tvals, E_pot, label = L"E_\text{pot}")
+    lines!(ax1, tvals, E_tot, label = L"E_\text{total}")
+
+    lines!(ax2, tvals, data.temperatures)
+
+    entropies = [approximate_entropy(pos, data.boxlength * 10, A, B, split = entropy_split) for pos in eachslice(data.trajectory, dims = 3)] ./ data.n_particles * Avogadro
+
+    lines!(ax3, tvals, entropies, color = :black)
+
+    axislegend(ax3d1)
+    axislegend(ax3d2)
+
+    axislegend(ax1)
+    return f
+end
+
+function LJpot(rs, ϵ, σ)
+    return @. 4 * ϵ * ((σ/rs)^12 - (σ/rs)^6)
+end
