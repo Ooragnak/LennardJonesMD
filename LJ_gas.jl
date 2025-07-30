@@ -358,7 +358,7 @@ function write_energy_trajectory(filename_base, energy_trajectory)
     _, n_frames = size(traj)
 
     open(filename_base * "_ene.dat", "w") do file
-        write(file, "#E_pot  E_kin  T  P")
+        write(file, "#E_pot  E_kin  T  P\n")
         for i in 1:n_frames
             write(file, @sprintf "%s %.8f %.8f %.8f\n" traj[1,i] traj[2,i] traj[3,i] traj[4,i])
         end
